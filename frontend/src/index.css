@@ -1,0 +1,53 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  body {
+    @apply bg-cultural-cream text-slate-800 antialiased font-sans selection:bg-cultural-gold selection:text-white;
+  }
+}
+
+/* Custom Scrollbar for premium feel */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-cultural-cream;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full hover:bg-cultural-gold transition-colors duration-300;
+}
+
+/* Custom classes for heritage UI */
+.bg-gradient-cultural {
+  background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 50%, #7F1D1D 100%);
+}
+
+.bg-glass {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.border-glass {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.text-shadow-premium {
+  text-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+/* Smooth active state transitions */
+.nav-link-active {
+  @apply text-cultural-gold border-b-2 border-cultural-gold font-semibold;
+}
+
+.nav-link-inactive {
+  @apply text-slate-600 hover:text-cultural-burgundy hover:border-b-2 hover:border-cultural-burgundy/40;
+}

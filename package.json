@@ -1,0 +1,17 @@
+{
+  "name": "orfeas-association-monorepo",
+  "version": "1.0.0",
+  "description": "Full-stack application monorepo for M.E.S. Orfeas",
+  "main": "backend/server.js",
+  "scripts": {
+    "install-backend": "cd backend && npm install",
+    "install-frontend": "cd frontend && npm install",
+    "install-all": "npm run install-backend && npm run install-frontend",
+    "build-frontend": "cd frontend && npm run build",
+    "build": "npm run install-all && npm run build-frontend",
+    "start": "node backend/server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
