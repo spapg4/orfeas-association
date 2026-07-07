@@ -233,6 +233,11 @@ app.post('/api/members', upload.single('payment_proof'), (req, res) => {
 
 // List all members (Protected)
 app.get('/api/members', authenticateToken, (req, res) => {
+  // Run cleanup of members whose subscription has expired
+  db.run("DELETE FROM members WHERE subscription_expires_at IS NOT NULL AND datetime(subscription_expires_at) < datetime('now', 'localtime')", [], (err) => {
+    if (err) console.error("Error cleaning up expired subscriptions:", err.message);
+  });
+
   // Run cleanup of soft-deleted members older than 3 months
   db.run("DELETE FROM members WHERE deleted_at IS NOT NULL AND deleted_at < datetime('now', 'localtime', '-3 months')", [], (err) => {
     if (err) console.error("Error cleaning up expired deleted members:", err.message);
