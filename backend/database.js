@@ -119,7 +119,7 @@ function seedDefaultSettings() {
     payment_bank: 'Εθνική Τράπεζα της Ελλάδος',
     payment_beneficiary: 'Μορφωτικός Σύλλογος "Ο Ορφέας"',
     payment_iban: 'GR12 0110 2340 0000 2345 6789 012',
-    payment_fee: '20',
+    payment_fee: '5',
     footer_about_text: 'Μορφωτικός & Εξωραϊστικός Σύλλογος Μεγάλου Ελευθεροχωρίου Ελασσόνας. Ιδρύθηκε το 1982 με σκοπό την προώθηση του πολιτισμού και τον εξωραϊσμό του τόπου μας.',
     footer_address: 'Μεγάλο Ελευθεροχώρι Ελασσόνας, Τ.Κ. 40200',
     footer_email: 'orfeas.meg.elefth@gmail.com',
