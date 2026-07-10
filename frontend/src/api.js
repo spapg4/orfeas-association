@@ -215,5 +215,61 @@ export const api = {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Αποτυχία διαγραφής εικόνας από το slideshow');
     return data;
+  },
+
+  // Calendar Events
+  getCalendarEvents: async () => {
+    const res = await fetch(`${API_BASE}/calendar`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Αποτυχία λήψης ημερολογίου');
+    return data;
+  },
+
+  createCalendarEvent: async (eventData) => {
+    const res = await fetch(`${API_BASE}/calendar`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify(eventData)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Αποτυχία δημιουργίας συμβάντος');
+    return data;
+  },
+
+  updateCalendarEvent: async (id, eventData) => {
+    const res = await fetch(`${API_BASE}/calendar/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify(eventData)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Αποτυχία ενημέρωσης συμβάντος');
+    return data;
+  },
+
+  deleteCalendarEvent: async (id) => {
+    const res = await fetch(`${API_BASE}/calendar/${id}`, {
+      method: 'DELETE',
+      headers: {
+        ...getAuthHeader()
+      }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Αποτυχία διαγραφής συμβάντος');
+    return data;
+  },
+
+  getCalendarStreamUrl: () => {
+    // Return relative stream URL or absolute for localhost
+    if (API_BASE.startsWith('/')) {
+      return '/api/calendar/stream';
+    }
+    return `${API_BASE}/calendar/stream`;
   }
 };

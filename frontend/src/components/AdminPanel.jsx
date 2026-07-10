@@ -187,6 +187,12 @@ export default function AdminPanel({ isAdminLoggedIn, setIsAdminLoggedIn, onSett
   const [paymentModalExpiresAt, setPaymentModalExpiresAt] = useState('');
   const [isPaymentConfirmLoading, setIsPaymentConfirmLoading] = useState(false);
 
+  // Live Calendar States
+  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+  const [currentEvent, setCurrentEvent] = useState({ id: null, title: '', description: '', event_date: '', event_time: '', location: '' });
+  const [calendarModalLoading, setCalendarModalLoading] = useState(false);
+
   useEffect(() => {
     if (isAdminLoggedIn) {
       loadDashboardData();
@@ -197,16 +203,18 @@ export default function AdminPanel({ isAdminLoggedIn, setIsAdminLoggedIn, onSett
     try {
       setLoadingData(true);
       setActionError('');
-      const [actData, memData, settingsData, slideshowData] = await Promise.all([
+      const [actData, memData, settingsData, slideshowData, calData] = await Promise.all([
         api.getActivities(),
         api.getMembers(),
         api.getSettings(),
-        api.getSlideshowImages()
+        api.getSlideshowImages(),
+        api.getCalendarEvents()
       ]);
       setActivities(actData);
       setMembers(memData);
       setSettings(settingsData);
       setSlideshowImages(slideshowData || []);
+      setCalendarEvents(calData || []);
     } catch (err) {
       console.error(err);
       setActionError('Αποτυχία συγχρονισμού δεδομένων από τον διακομιστή.');
@@ -380,6 +388,61 @@ export default function AdminPanel({ isAdminLoggedIn, setIsAdminLoggedIn, onSett
       setActionError(err.message || 'Αποτυχία ενημέρωσης πληρωμής.');
     } finally {
       setIsPaymentConfirmLoading(false);
+    }
+  };
+
+  // Calendar CRUD Handlers
+  const handleCalendarSubmit = async (e) => {
+    e.preventDefault();
+    if (!currentEvent.title || !currentEvent.event_date || !currentEvent.event_time) {
+      setActionError('Τα πεδία Τίτλος, Ημερομηνία και Ώρα είναι υποχρεωτικά.');
+      return;
+    }
+
+    setActionError('');
+    setActionSuccess('');
+    setCalendarModalLoading(true);
+
+    try {
+      if (currentEvent.id) {
+        await api.updateCalendarEvent(currentEvent.id, currentEvent);
+        setActionSuccess('Η εκδήλωση ενημερώθηκε επιτυχώς.');
+      } else {
+        await api.createCalendarEvent(currentEvent);
+        setActionSuccess('Η νέα εκδήλωση προστέθηκε στο ημερολόγιο.');
+      }
+      setIsCalendarModalOpen(false);
+      setCurrentEvent({ id: null, title: '', description: '', event_date: '', event_time: '', location: '' });
+      loadDashboardData();
+    } catch (err) {
+      setActionError(err.message || 'Αποτυχία αποθήκευσης εκδήλωσης.');
+    } finally {
+      setCalendarModalLoading(false);
+    }
+  };
+
+  const handleEditEventClick = (event) => {
+    setCurrentEvent({
+      id: event.id,
+      title: event.title,
+      description: event.description || '',
+      event_date: event.event_date,
+      event_time: event.event_time,
+      location: event.location || ''
+    });
+    setIsCalendarModalOpen(true);
+  };
+
+  const handleDeleteEventClick = async (id) => {
+    if (!window.confirm('Είστε σίγουρος ότι θέλετε να διαγράψετε αυτή την εκδήλωση/πρόβα από το ημερολόγιο;')) return;
+    setActionError('');
+    setActionSuccess('');
+    try {
+      await api.deleteCalendarEvent(id);
+      setActionSuccess('Η εκδήλωση διαγράφηκε επιτυχώς.');
+      loadDashboardData();
+    } catch (err) {
+      setActionError(err.message || 'Αποτυχία διαγραφής εκδήλωσης.');
     }
   };
 
@@ -610,6 +673,16 @@ export default function AdminPanel({ isAdminLoggedIn, setIsAdminLoggedIn, onSett
             }`}
           >
             <i className="fas fa-bullhorn mr-1.5"></i> Δραστηριότητες
+          </button>
+          <button
+            onClick={() => setActiveSubTab('calendar')}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+              activeSubTab === 'calendar'
+                ? 'bg-cultural-gold text-slate-900 shadow-sm font-bold'
+                : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <i className="fas fa-calendar-alt mr-1.5"></i> Ημερολόγιο
           </button>
           <button
             onClick={() => setActiveSubTab('members')}
@@ -1204,6 +1277,96 @@ export default function AdminPanel({ isAdminLoggedIn, setIsAdminLoggedIn, onSett
             </div>
           )}
 
+          {activeSubTab === 'calendar' && (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/60 shadow-sm">
+                <div>
+                  <h3 className="font-serif font-bold text-lg text-slate-900">Διαχείριση Live Ημερολογίου</h3>
+                  <p className="text-xs text-slate-500">Προσθέστε, επεξεργαστείτε ή διαγράψτε εκδηλώσεις, πρόβες και συναντήσεις</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setCurrentEvent({ id: null, title: '', description: '', event_date: '', event_time: '', location: '' });
+                    setIsCalendarModalOpen(true);
+                  }}
+                  className="bg-cultural-gold hover:bg-cultural-gold/90 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center space-x-1.5 transition-colors self-start sm:self-auto shadow-sm"
+                >
+                  <i className="fas fa-plus"></i>
+                  <span>Νέα Εκδήλωση / Πρόβα</span>
+                </button>
+              </div>
+
+              {/* Roster of Events */}
+              <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                  <h4 className="font-bold text-slate-800 text-sm uppercase tracking-wider">Προγραμματισμένες Εκδηλώσεις</h4>
+                  <span className="text-xs text-slate-400 font-semibold font-mono">Σύνολο: {calendarEvents.length}</span>
+                </div>
+
+                {calendarEvents.length === 0 ? (
+                  <div className="text-center py-16 text-slate-400 space-y-2">
+                    <div className="text-4xl text-slate-200">
+                      <i className="fas fa-calendar-times"></i>
+                    </div>
+                    <p className="text-sm font-medium">Δεν υπάρχουν εκδηλώσεις στο ημερολόγιο.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-slate-600">
+                      <thead className="bg-slate-50 text-slate-700 text-xs font-bold uppercase tracking-wider">
+                        <tr>
+                          <th className="px-6 py-4 rounded-l-xl">Εκδήλωση / Τίτλος</th>
+                          <th className="px-6 py-4">Ημερομηνία & Ώρα</th>
+                          <th className="px-6 py-4">Τοποθεσία</th>
+                          <th className="px-6 py-4 text-right rounded-r-xl">Ενέργειες</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {calendarEvents.map((event) => (
+                          <tr key={event.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-6 py-4 max-w-xs">
+                              <span className="font-bold text-slate-900 block truncate">{event.title}</span>
+                              {event.description && (
+                                <span className="text-xs text-slate-400 block truncate mt-0.5">{event.description}</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex flex-col">
+                                <span className="font-semibold text-slate-800">{new Date(event.event_date).toLocaleDateString('el-GR')}</span>
+                                <span className="text-xs text-slate-400 font-mono">{event.event_time}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="text-slate-700">{event.location || '-'}</span>
+                            </td>
+                            <td className="px-6 py-4 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end space-x-2">
+                                <button
+                                  onClick={() => handleEditEventClick(event)}
+                                  className="w-8 h-8 rounded-lg bg-slate-50 text-slate-600 hover:bg-cultural-blue/10 hover:text-cultural-blue flex items-center justify-center transition-all border border-slate-200/50"
+                                  title="Επεξεργασία"
+                                >
+                                  <i className="fas fa-edit text-xs"></i>
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteEventClick(event.id)}
+                                  className="w-8 h-8 rounded-lg bg-slate-50 text-slate-600 hover:bg-red-50 hover:text-red-600 flex items-center justify-center transition-all border border-slate-200/50"
+                                  title="Διαγραφή"
+                                >
+                                  <i className="fas fa-trash-alt text-xs"></i>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
         </div>
       )}
 
@@ -1534,6 +1697,111 @@ export default function AdminPanel({ isAdminLoggedIn, setIsAdminLoggedIn, onSett
               </div>
             </form>
           </div>
+        </div>
+      )}
+      {/* CRUD Calendar Event Modal Overlay */}
+      {isCalendarModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6">
+          <form 
+            onSubmit={handleCalendarSubmit}
+            className="bg-white rounded-3xl overflow-hidden max-w-xl w-full shadow-2xl border border-slate-200/50 flex flex-col animate-fade-in"
+          >
+            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-cultural-gold/20">
+              <h4 className="font-bold font-serif text-lg text-cultural-gold">
+                {currentEvent.id ? 'Επεξεργασία Εκδήλωσης/Πρόβας' : 'Νέα Εκδήλωση / Πόβα'}
+              </h4>
+              <button 
+                type="button"
+                onClick={() => { setIsCalendarModalOpen(false); setCurrentEvent({ id: null, title: '', description: '', event_date: '', event_time: '', location: '' }); }}
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                <i className="fas fa-times text-lg"></i>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 text-sm text-slate-600">
+              <div className="space-y-1.5">
+                <label className="text-slate-700 font-semibold text-xs uppercase tracking-wider block">Τίτλος *</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="π.χ. Πρόβα Παραδοσιακών Χορών"
+                  value={currentEvent.title || ''} 
+                  onChange={(e) => setCurrentEvent({...currentEvent, title: e.target.value})} 
+                  className="w-full border border-slate-200 focus:border-cultural-gold focus:ring-1 focus:ring-cultural-gold rounded-xl px-4 py-2.5 text-sm transition-all outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-slate-700 font-semibold text-xs uppercase tracking-wider block">Ημερομηνία *</label>
+                  <input 
+                    type="date" 
+                    required
+                    value={currentEvent.event_date || ''} 
+                    onChange={(e) => setCurrentEvent({...currentEvent, event_date: e.target.value})} 
+                    className="w-full border border-slate-200 focus:border-cultural-gold focus:ring-1 focus:ring-cultural-gold rounded-xl px-4 py-2.5 text-sm transition-all outline-none"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-slate-700 font-semibold text-xs uppercase tracking-wider block">Ώρα Διεξαγωγής *</label>
+                  <input 
+                    type="time" 
+                    required
+                    value={currentEvent.event_time || ''} 
+                    onChange={(e) => setCurrentEvent({...currentEvent, event_time: e.target.value})} 
+                    className="w-full border border-slate-200 focus:border-cultural-gold focus:ring-1 focus:ring-cultural-gold rounded-xl px-4 py-2.5 text-sm transition-all outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-slate-700 font-semibold text-xs uppercase tracking-wider block">Τοποθεσία</label>
+                <input 
+                  type="text" 
+                  placeholder="π.χ. Αίθουσα Συλλόγου"
+                  value={currentEvent.location || ''} 
+                  onChange={(e) => setCurrentEvent({...currentEvent, location: e.target.value})} 
+                  className="w-full border border-slate-200 focus:border-cultural-gold focus:ring-1 focus:ring-cultural-gold rounded-xl px-4 py-2.5 text-sm transition-all outline-none"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-slate-700 font-semibold text-xs uppercase tracking-wider block">Περιγραφή / Σημειώσεις</label>
+                <textarea 
+                  rows="3"
+                  placeholder="Πρόσθετες πληροφορίες για τα μέλη..."
+                  value={currentEvent.description || ''} 
+                  onChange={(e) => setCurrentEvent({...currentEvent, description: e.target.value})} 
+                  className="w-full border border-slate-200 focus:border-cultural-gold focus:ring-1 focus:ring-cultural-gold rounded-xl px-4 py-2.5 text-sm transition-all outline-none resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => { setIsCalendarModalOpen(false); setCurrentEvent({ id: null, title: '', description: '', event_date: '', event_time: '', location: '' }); }}
+                className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold px-4 py-2 rounded-xl text-xs transition-all"
+              >
+                Ακύρωση
+              </button>
+              <button
+                type="submit"
+                disabled={calendarModalLoading}
+                className="bg-cultural-burgundy hover:bg-cultural-burgundy/90 text-white font-semibold px-5 py-2.5 rounded-xl text-xs shadow-md transition-all flex items-center space-x-1.5"
+              >
+                {calendarModalLoading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <>
+                    <i className="fas fa-save"></i>
+                    <span>Αποθήκευση</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>

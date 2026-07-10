@@ -78,6 +78,19 @@ db.serialize(() => {
     }
   });
 
+  // 5. Create Calendar Events Table (for Live Calendar)
+  db.run(`CREATE TABLE IF NOT EXISTS calendar_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT,
+    event_date TEXT NOT NULL, -- Format: YYYY-MM-DD
+    event_time TEXT NOT NULL, -- Format: HH:MM
+    location TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`, (err) => {
+    if (err) console.error('Error creating calendar_events table:', err.message);
+  });
+
   // Seed default admin user
   const defaultAdmin = 'admin';
   const defaultPass = 'adminorfeas123';

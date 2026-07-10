@@ -464,6 +464,118 @@ app.delete('/api/settings/slideshow/:filename', authenticateToken, (req, res) =>
   });
 });
 
+
+// ==========================================
+// 5. LIVE CALENDAR & SSE STREAM API
+// ==========================================
+
+let sseClients = [];
+
+// SSE Stream Connection Endpoint
+app.get('/api/calendar/stream', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  // Register client
+  sseClients.push(res);
+  console.log(`SSE Client connected. Total: ${sseClients.length}`);
+
+  // Ping client to keep connection alive
+  const pingInterval = setInterval(() => {
+    res.write(': ping\n\n');
+  }, 30000);
+
+  req.on('close', () => {
+    clearInterval(pingInterval);
+    sseClients = sseClients.filter(client => client !== res);
+    console.log(`SSE Client disconnected. Total: ${sseClients.length}`);
+  });
+});
+
+// Broadcast Helper
+const broadcastCalendarUpdate = (action, eventData) => {
+  const message = JSON.stringify({ action, event: eventData });
+  sseClients.forEach(client => {
+    client.write(`data: ${message}\n\n`);
+  });
+};
+
+// GET all calendar events
+app.get('/api/calendar', (req, res) => {
+  db.all('SELECT * FROM calendar_events ORDER BY event_date ASC, event_time ASC', [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ message: 'Σφάλμα κατά την ανάκτηση του ημερολογίου.' });
+    }
+    res.json(rows);
+  });
+});
+
+// POST new calendar event (Protected)
+app.post('/api/calendar', authenticateToken, (req, res) => {
+  const { title, description, event_date, event_time, location } = req.body;
+
+  if (!title || !event_date || !event_time) {
+    return res.status(400).json({ message: 'Τα πεδία Τίτλος, Ημερομηνία και Ώρα είναι υποχρεωτικά.' });
+  }
+
+  db.run(
+    'INSERT INTO calendar_events (title, description, event_date, event_time, location) VALUES (?, ?, ?, ?, ?)',
+    [title, description, event_date, event_time, location],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ message: 'Αποτυχία δημιουργίας εκδήλωσης.' });
+      }
+      const newEvent = { id: this.lastID, title, description, event_date, event_time, location };
+      broadcastCalendarUpdate('create', newEvent);
+      res.status(201).json(newEvent);
+    }
+  );
+});
+
+// PUT update calendar event (Protected)
+app.put('/api/calendar/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { title, description, event_date, event_time, location } = req.body;
+
+  if (!title || !event_date || !event_time) {
+    return res.status(400).json({ message: 'Τα πεδία Τίτλος, Ημερομηνία και Ώρα είναι υποχρεωτικά.' });
+  }
+
+  db.run(
+    'UPDATE calendar_events SET title = ?, description = ?, event_date = ?, event_time = ?, location = ? WHERE id = ?',
+    [title, description, event_date, event_time, location, id],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ message: 'Αποτυχία ενημέρωσης εκδήλωσης.' });
+      }
+      if (this.changes === 0) {
+        return res.status(404).json({ message: 'Η εκδήλωση δεν βρέθηκε.' });
+      }
+      const updatedEvent = { id: parseInt(id), title, description, event_date, event_time, location };
+      broadcastCalendarUpdate('update', updatedEvent);
+      res.json(updatedEvent);
+    }
+  );
+});
+
+// DELETE calendar event (Protected)
+app.delete('/api/calendar/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+
+  db.run('DELETE FROM calendar_events WHERE id = ?', [id], function(err) {
+    if (err) {
+      return res.status(500).json({ message: 'Αποτυχία διαγραφής εκδήλωσης.' });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ message: 'Η εκδήλωση δεν βρέθηκε.' });
+    }
+    broadcastCalendarUpdate('delete', { id: parseInt(id) });
+    res.json({ message: 'Η εκδήλωση διαγράφηκε επιτυχώς.', id: parseInt(id) });
+  });
+});
+
 // Serve frontend static assets in production
 const frontendDistPath = path.join(__dirname, '../frontend/dist');
 app.use(express.static(frontendDistPath));

@@ -4,6 +4,7 @@ import Hero from './components/Hero';
 import ActivitiesFeed from './components/ActivitiesFeed';
 import RegistrationForm from './components/RegistrationForm';
 import AdminPanel from './components/AdminPanel';
+import Calendar from './components/Calendar';
 import { api } from './api';
 
 export default function App() {
@@ -52,7 +53,10 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {activeTab === 'home' && (
-          <Hero onRegisterClick={() => setActiveTab('register')} />
+          <>
+            <Hero onRegisterClick={() => setActiveTab('register')} />
+            <Calendar />
+          </>
         )}
         
         {activeTab === 'activities' && (
