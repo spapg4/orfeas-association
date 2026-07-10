@@ -195,6 +195,7 @@ export default function AdminPanel({ isAdminLoggedIn, setIsAdminLoggedIn, onSett
 
   // Articles Roster States
   const [adminArticles, setAdminArticles] = useState([]);
+  const [selectedAdminArticle, setSelectedAdminArticle] = useState(null);
 
   useEffect(() => {
     if (isAdminLoggedIn) {
@@ -1444,9 +1445,21 @@ export default function AdminPanel({ isAdminLoggedIn, setIsAdminLoggedIn, onSett
                       <tbody className="divide-y divide-slate-100">
                         {adminArticles.map((article) => (
                           <tr key={article.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-6 py-4 max-w-xs">
-                              <span className="font-bold text-slate-900 block truncate">{article.title}</span>
-                              <span className="text-xs text-slate-400 block line-clamp-1 mt-0.5">{article.content}</span>
+                            <td className="px-6 py-4 max-w-sm">
+                              <span className="font-bold text-slate-900 block">{article.title}</span>
+                              <p className="text-xs text-slate-400 mt-1 line-clamp-5 whitespace-pre-line leading-relaxed font-light">
+                                {article.content}
+                              </p>
+                              {article.content.length > 150 || article.content.split('\n').length > 5 ? (
+                                <button
+                                  onClick={() => setSelectedAdminArticle(article)}
+                                  className="text-[10px] font-bold text-cultural-burgundy hover:text-cultural-burgundy/80 flex items-center space-x-1 mt-1 focus:outline-none"
+                                  title="Άνοιγμα Άρθρου"
+                                >
+                                  <span>Διάβασμα άρθρου</span>
+                                  <i className="fas fa-arrow-right text-[9px]"></i>
+                                </button>
+                              ) : null}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className="font-semibold text-slate-800">{article.author || 'Ανώνυμος'}</span>
@@ -1939,6 +1952,78 @@ export default function AdminPanel({ isAdminLoggedIn, setIsAdminLoggedIn, onSett
               </button>
             </div>
           </form>
+        </div>
+      )}
+      {/* Admin Article Details Modal */}
+      {selectedAdminArticle && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6">
+          <div className="bg-white rounded-3xl overflow-hidden max-w-2xl w-full shadow-2xl border border-slate-200/50 flex flex-col animate-fade-in">
+            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-cultural-gold/20">
+              <h4 className="font-bold font-serif text-base text-cultural-gold flex items-center space-x-2">
+                <i className="fas fa-book-open"></i>
+                <span>Πλήρες Κείμενο Άρθρου</span>
+              </h4>
+              <button 
+                onClick={() => setSelectedAdminArticle(null)}
+                className="text-slate-400 hover:text-white transition-colors focus:outline-none"
+              >
+                <i className="fas fa-times text-lg"></i>
+              </button>
+            </div>
+
+            <div className="p-6 sm:p-8 space-y-6 overflow-y-auto max-h-[70vh]">
+              <div className="space-y-2 border-b border-slate-100 pb-4">
+                <h3 className="font-serif font-bold text-xl sm:text-2xl text-slate-900 leading-snug">
+                  {selectedAdminArticle.title}
+                </h3>
+                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 font-semibold">
+                  <span className="flex items-center space-x-1">
+                    <i className="far fa-user text-cultural-gold/80"></i>
+                    <span className="text-slate-600 font-bold">{selectedAdminArticle.author || 'Ανώνυμος'}</span>
+                  </span>
+                  <span>•</span>
+                  <span>{new Date(selectedAdminArticle.created_at).toLocaleDateString('el-GR')}</span>
+                </div>
+              </div>
+
+              <p className="text-slate-700 text-sm sm:text-base leading-relaxed whitespace-pre-line font-light">
+                {selectedAdminArticle.content}
+              </p>
+            </div>
+
+            <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex justify-between gap-2">
+              <div className="flex space-x-2">
+                {selectedAdminArticle.status !== 'Approved' && (
+                  <button
+                    onClick={() => {
+                      handleArticleStatusChange(selectedAdminArticle.id, 'Approved');
+                      setSelectedAdminArticle(null);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-sm focus:outline-none"
+                  >
+                    Έγκριση
+                  </button>
+                )}
+                {selectedAdminArticle.status !== 'Rejected' && (
+                  <button
+                    onClick={() => {
+                      handleArticleStatusChange(selectedAdminArticle.id, 'Rejected');
+                      setSelectedAdminArticle(null);
+                    }}
+                    className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all focus:outline-none"
+                  >
+                    Απόρριψη
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={() => setSelectedAdminArticle(null)}
+                className="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-5 py-2.5 rounded-xl text-xs transition-all focus:outline-none"
+              >
+                Κλείσιμο
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
