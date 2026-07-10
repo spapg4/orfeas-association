@@ -6,6 +6,7 @@ export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [liveNotice, setLiveNotice] = useState('');
+  const [selectedDetailEvent, setSelectedDetailEvent] = useState(null);
 
   // Load events and listen to SSE Stream
   useEffect(() => {
@@ -280,9 +281,20 @@ export default function Calendar() {
                     </div>
 
                     {e.description && (
-                      <p className="text-xs text-slate-500 leading-relaxed pl-1 whitespace-pre-line">
-                        {e.description}
-                      </p>
+                      <div className="pl-1">
+                        <p className="text-xs text-slate-500 leading-relaxed line-clamp-2 whitespace-pre-line font-light">
+                          {e.description}
+                        </p>
+                        {e.description.length > 80 || e.description.split('\n').length > 2 ? (
+                          <button
+                            onClick={() => setSelectedDetailEvent(e)}
+                            className="text-[10px] font-bold text-cultural-burgundy hover:text-cultural-burgundy/80 flex items-center space-x-1 mt-1 focus:outline-none"
+                          >
+                            <span>Πληροφορίες</span>
+                            <i className="fas fa-arrow-right text-[8px]"></i>
+                          </button>
+                        ) : null}
+                      </div>
                     )}
 
                     {e.location && (
@@ -305,8 +317,70 @@ export default function Calendar() {
             <span>Σύνολο: {events.length}</span>
           </div>
         </div>
-
       </div>
+
+      {/* Event Details Modal Dialog */}
+      {selectedDetailEvent && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6">
+          <div className="bg-white rounded-3xl overflow-hidden max-w-md w-full shadow-2xl border border-slate-200/50 flex flex-col animate-fade-in text-slate-600 text-sm">
+            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-cultural-gold/20">
+              <h4 className="font-bold font-serif text-base text-cultural-gold flex items-center space-x-2">
+                <i className="fas fa-info-circle"></i>
+                <span>Λεπτομέρειες Εκδήλωσης</span>
+              </h4>
+              <button 
+                onClick={() => setSelectedDetailEvent(null)}
+                className="text-slate-400 hover:text-white transition-colors focus:outline-none"
+              >
+                <i className="fas fa-times text-base"></i>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="space-y-1">
+                <h3 className="font-serif font-bold text-lg text-slate-900 leading-snug">
+                  {selectedDetailEvent.title}
+                </h3>
+                <div className="flex items-center space-x-2 text-xs text-slate-400 font-semibold">
+                  <span className="bg-cultural-gold/10 text-cultural-gold border border-cultural-gold/25 px-2 py-0.5 rounded font-mono">
+                    {selectedDetailEvent.event_time}
+                  </span>
+                  <span>•</span>
+                  <span>{new Date(selectedDetailEvent.event_date).toLocaleDateString('el-GR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+                </div>
+              </div>
+
+              {selectedDetailEvent.location && (
+                <div className="flex items-start space-x-2 text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <i className="fas fa-map-marker-alt text-cultural-gold mt-0.5"></i>
+                  <div>
+                    <span className="font-semibold block text-slate-700">Τοποθεσία</span>
+                    <span>{selectedDetailEvent.location}</span>
+                  </div>
+                </div>
+              )}
+
+              {selectedDetailEvent.description && (
+                <div className="space-y-1.5 pt-2">
+                  <span className="font-bold text-xs uppercase tracking-wider text-slate-400 block">Περιγραφή / Σημειώσεις</span>
+                  <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-line font-light bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                    {selectedDetailEvent.description}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex justify-end">
+              <button
+                onClick={() => setSelectedDetailEvent(null)}
+                className="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-5 py-2.5 rounded-xl text-xs transition-all focus:outline-none shadow-sm"
+              >
+                Κλείσιμο
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
