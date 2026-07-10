@@ -5,6 +5,7 @@ import ActivitiesFeed from './components/ActivitiesFeed';
 import RegistrationForm from './components/RegistrationForm';
 import AdminPanel from './components/AdminPanel';
 import Calendar from './components/Calendar';
+import SocialFeed from './components/SocialFeed';
 import { api } from './api';
 
 export default function App() {
@@ -56,6 +57,7 @@ export default function App() {
           <>
             <Hero onRegisterClick={() => setActiveTab('register')} />
             <Calendar />
+            <SocialFeed />
           </>
         )}
         
