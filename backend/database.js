@@ -128,6 +128,41 @@ db.serialize(() => {
       });
     }
   });
+
+  // Seed default activities, calendar events, and articles if they are empty
+  db.get('SELECT COUNT(*) as count FROM activities', (err, row) => {
+    if (!err && row && row.count === 0) {
+      db.run(`INSERT INTO activities (title, content, image_url, created_at) VALUES (
+        'πανηγύρι 20 Ιουλίου',
+        'Σας προσκαλούμε στο ετήσιο πανηγύρι του συλλόγου μας στις 20 Ιουλίου. Θα υπάρχει ζωντανή παραδοσιακή μουσική, χορός και φαγητό!',
+        '/uploads/image-1782813744624-658487952.jpeg',
+        '2026-07-10 12:00:00'
+      )`);
+    }
+  });
+
+  db.get('SELECT COUNT(*) as count FROM calendar_events', (err, row) => {
+    if (!err && row && row.count === 0) {
+      db.run(`INSERT INTO calendar_events (title, description, event_date, event_time, location) VALUES (
+        'προβα',
+        'ητ;ΕΦ Ρ23θιρ32ιθ4ριθ34ρ λ;ισεθρ 4ςρεο87υ3ρο87υρ3ςε θαςλτερυοτυερο8ρευπ8ερ ικεριερθηοιθρεηγιφιρεαπουη όιεηιοθερηγοιθερπηοθιγρηε ορεπογηπεροηγποηρεπογη ρεστ89π8θρεπ98υηρεπερπ8',
+        '2026-12-25',
+        '09:15',
+        'πλατεία'
+      )`);
+    }
+  });
+
+  db.get('SELECT COUNT(*) as count FROM articles', (err, row) => {
+    if (!err && row && row.count === 0) {
+      db.run(`INSERT INTO articles (title, content, author, status) VALUES (
+        'Η σημασία της παράδοσης',
+        'Η διατήρηση των εθίμων και των παραδοσιακών χορών είναι ο συνδετικός μας κρίκος με το παρελθόν και η κληρονομιά που αφήνουμε στις επόμενες γενιές. Ο σύλλογός μας συνεχίζει με υπερηφάνεια αυτό το έργο.',
+        'Διοικητικό Συμβούλιο',
+        'Approved'
+      )`);
+    }
+  });
 });
 
 // Function to seed initial settings values
