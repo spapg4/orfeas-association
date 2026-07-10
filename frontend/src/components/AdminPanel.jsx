@@ -193,6 +193,9 @@ export default function AdminPanel({ isAdminLoggedIn, setIsAdminLoggedIn, onSett
   const [currentEvent, setCurrentEvent] = useState({ id: null, title: '', description: '', event_date: '', event_time: '', location: '' });
   const [calendarModalLoading, setCalendarModalLoading] = useState(false);
 
+  // Articles Roster States
+  const [adminArticles, setAdminArticles] = useState([]);
+
   useEffect(() => {
     if (isAdminLoggedIn) {
       loadDashboardData();
@@ -203,18 +206,20 @@ export default function AdminPanel({ isAdminLoggedIn, setIsAdminLoggedIn, onSett
     try {
       setLoadingData(true);
       setActionError('');
-      const [actData, memData, settingsData, slideshowData, calData] = await Promise.all([
+      const [actData, memData, settingsData, slideshowData, calData, articlesData] = await Promise.all([
         api.getActivities(),
         api.getMembers(),
         api.getSettings(),
         api.getSlideshowImages(),
-        api.getCalendarEvents()
+        api.getCalendarEvents(),
+        api.getAdminArticles()
       ]);
       setActivities(actData);
       setMembers(memData);
       setSettings(settingsData);
       setSlideshowImages(slideshowData || []);
       setCalendarEvents(calData || []);
+      setAdminArticles(articlesData || []);
     } catch (err) {
       console.error(err);
       setActionError('Αποτυχία συγχρονισμού δεδομένων από τον διακομιστή.');
@@ -443,6 +448,32 @@ export default function AdminPanel({ isAdminLoggedIn, setIsAdminLoggedIn, onSett
       loadDashboardData();
     } catch (err) {
       setActionError(err.message || 'Αποτυχία διαγραφής εκδήλωσης.');
+    }
+  };
+
+  // Articles Moderation Handlers
+  const handleArticleStatusChange = async (id, status) => {
+    setActionError('');
+    setActionSuccess('');
+    try {
+      await api.updateArticleStatus(id, status);
+      setActionSuccess(`Το άρθρο ${status === 'Approved' ? 'εγκρίθηκε' : 'απορρίφθηκε'} επιτυχώς.`);
+      loadDashboardData();
+    } catch (err) {
+      setActionError(err.message || 'Αποτυχία ενημέρωσης κατάστασης άρθρου.');
+    }
+  };
+
+  const handleDeleteArticle = async (id) => {
+    if (!window.confirm('Προσοχή! Η διαγραφή θα αφαιρέσει οριστικά το άρθρο από τη βάση δεδομένων. Συνέχεια;')) return;
+    setActionError('');
+    setActionSuccess('');
+    try {
+      await api.deleteArticle(id);
+      setActionSuccess('Το άρθρο διαγράφηκε οριστικά.');
+      loadDashboardData();
+    } catch (err) {
+      setActionError(err.message || 'Αποτυχία διαγραφής άρθρου.');
     }
   };
 
@@ -683,6 +714,16 @@ export default function AdminPanel({ isAdminLoggedIn, setIsAdminLoggedIn, onSett
             }`}
           >
             <i className="fas fa-calendar-alt mr-1.5"></i> Ημερολόγιο
+          </button>
+          <button
+            onClick={() => setActiveSubTab('articles')}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+              activeSubTab === 'articles'
+                ? 'bg-teal-700 text-white shadow-sm'
+                : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <i className="fas fa-feather-alt mr-1.5"></i> Άρθρα
           </button>
           <button
             onClick={() => setActiveSubTab('members')}
@@ -1350,6 +1391,102 @@ export default function AdminPanel({ isAdminLoggedIn, setIsAdminLoggedIn, onSett
                                 </button>
                                 <button
                                   onClick={() => handleDeleteEventClick(event.id)}
+                                  className="w-8 h-8 rounded-lg bg-slate-50 text-slate-600 hover:bg-red-50 hover:text-red-600 flex items-center justify-center transition-all border border-slate-200/50"
+                                  title="Διαγραφή"
+                                >
+                                  <i className="fas fa-trash-alt text-xs"></i>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeSubTab === 'articles' && (
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-3xl border border-slate-200/60 shadow-sm">
+                <h3 className="font-serif font-bold text-lg text-slate-900">Διαχείριση & Έγκριση Άρθρων</h3>
+                <p className="text-xs text-slate-500">Εγκρίνετε ή απορρίψτε άρθρα που έχουν υποβληθεί από τους επισκέπτες της ιστοσελίδας</p>
+              </div>
+
+              {/* Roster of Articles */}
+              <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                  <h4 className="font-bold text-slate-800 text-sm uppercase tracking-wider">Λίστα Άρθρων</h4>
+                  <span className="text-xs text-slate-400 font-semibold font-mono">Σύνολο: {adminArticles.length}</span>
+                </div>
+
+                {adminArticles.length === 0 ? (
+                  <div className="text-center py-16 text-slate-400 space-y-2">
+                    <div className="text-4xl text-slate-200">
+                      <i className="fas fa-feather"></i>
+                    </div>
+                    <p className="text-sm font-medium">Δεν υπάρχουν υποβληθέντα άρθρα στη βάση.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-slate-600">
+                      <thead className="bg-slate-50 text-slate-700 text-xs font-bold uppercase tracking-wider">
+                        <tr>
+                          <th className="px-6 py-4 rounded-l-xl">Τίτλος Άρθρου</th>
+                          <th className="px-6 py-4">Συντάκτης</th>
+                          <th className="px-6 py-4">Ημερομηνία</th>
+                          <th className="px-6 py-4">Κατάσταση</th>
+                          <th className="px-6 py-4 text-right rounded-r-xl">Ενέργειες</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {adminArticles.map((article) => (
+                          <tr key={article.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-6 py-4 max-w-xs">
+                              <span className="font-bold text-slate-900 block truncate">{article.title}</span>
+                              <span className="text-xs text-slate-400 block line-clamp-1 mt-0.5">{article.content}</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="font-semibold text-slate-800">{article.author || 'Ανώνυμος'}</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="text-slate-500 font-mono text-xs">{new Date(article.created_at).toLocaleDateString('el-GR')}</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`status-badge ${
+                                article.status === 'Approved' ? 'status-active' :
+                                article.status === 'Rejected' ? 'status-expired' :
+                                'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {article.status === 'Approved' ? 'Εγκρίθηκε' :
+                                 article.status === 'Rejected' ? 'Απορρίφθηκε' :
+                                 'Εκκρεμεί'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end space-x-2">
+                                {article.status !== 'Approved' && (
+                                  <button
+                                    onClick={() => handleArticleStatusChange(article.id, 'Approved')}
+                                    className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold transition-all border border-emerald-100"
+                                    title="Έγκριση"
+                                  >
+                                    Έγκριση
+                                  </button>
+                                )}
+                                {article.status !== 'Rejected' && (
+                                  <button
+                                    onClick={() => handleArticleStatusChange(article.id, 'Rejected')}
+                                    className="px-3 py-1.5 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-bold transition-all border border-orange-100"
+                                    title="Απόρριψη"
+                                  >
+                                    Απόρριψη
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleDeleteArticle(article.id)}
                                   className="w-8 h-8 rounded-lg bg-slate-50 text-slate-600 hover:bg-red-50 hover:text-red-600 flex items-center justify-center transition-all border border-slate-200/50"
                                   title="Διαγραφή"
                                 >

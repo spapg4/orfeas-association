@@ -91,6 +91,18 @@ db.serialize(() => {
     if (err) console.error('Error creating calendar_events table:', err.message);
   });
 
+  // 6. Create Articles Table (for Visitor Articles with Admin Approval)
+  db.run(`CREATE TABLE IF NOT EXISTS articles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    author TEXT,
+    status TEXT DEFAULT 'Pending', -- Pending, Approved, Rejected
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`, (err) => {
+    if (err) console.error('Error creating articles table:', err.message);
+  });
+
   // Seed default admin user
   const defaultAdmin = 'admin';
   const defaultPass = 'adminorfeas123';

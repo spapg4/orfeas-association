@@ -6,6 +6,7 @@ import RegistrationForm from './components/RegistrationForm';
 import AdminPanel from './components/AdminPanel';
 import Calendar from './components/Calendar';
 import SocialFeed from './components/SocialFeed';
+import ArticlesList from './components/ArticlesList';
 import { api } from './api';
 
 export default function App() {
@@ -63,6 +64,10 @@ export default function App() {
         
         {activeTab === 'activities' && (
           <ActivitiesFeed />
+        )}
+
+        {activeTab === 'articles' && (
+          <ArticlesList />
         )}
         
         {activeTab === 'register' && (

@@ -6,6 +6,7 @@ export default function Header({ activeTab, setActiveTab, isAdminLoggedIn, handl
   const navItems = [
     { id: 'home', label: 'Αρχική & Ιστορία', icon: 'fa-home' },
     { id: 'activities', label: 'Δραστηριότητες', icon: 'fa-bullhorn' },
+    { id: 'articles', label: 'Άρθρα', icon: 'fa-newspaper' },
     { id: 'register', label: 'Εγγραφή Μέλους', icon: 'fa-user-plus' },
     { id: 'admin', label: isAdminLoggedIn ? 'Πίνακας Ελέγχου' : 'Σύνδεση Διαχειριστή', icon: 'fa-user-shield' }
   ];

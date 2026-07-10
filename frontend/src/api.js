@@ -271,5 +271,59 @@ export const api = {
       return '/api/calendar/stream';
     }
     return `${API_BASE}/calendar/stream`;
+  },
+
+  // Articles API Calls
+  getArticles: async () => {
+    const res = await fetch(`${API_BASE}/articles`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Αποτυχία λήψης άρθρων');
+    return data;
+  },
+
+  createArticle: async (articleData) => {
+    const res = await fetch(`${API_BASE}/articles`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(articleData)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Αποτυχία υποβολής άρθρου');
+    return data;
+  },
+
+  getAdminArticles: async () => {
+    const res = await fetch(`${API_BASE}/admin/articles`, {
+      headers: { ...getAuthHeader() }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Αποτυχία λήψης άρθρων διαχείρισης');
+    return data;
+  },
+
+  updateArticleStatus: async (id, status) => {
+    const res = await fetch(`${API_BASE}/admin/articles/${id}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify({ status })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Αποτυχία ενημέρωσης κατάστασης άρθρου');
+    return data;
+  },
+
+  deleteArticle: async (id) => {
+    const res = await fetch(`${API_BASE}/admin/articles/${id}`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeader() }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Αποτυχία διαγραφής άρθρου');
+    return data;
   }
 };

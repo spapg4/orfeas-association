@@ -576,6 +576,96 @@ app.delete('/api/calendar/:id', authenticateToken, (req, res) => {
   });
 });
 
+// === ARTICLES API ENDPOINTS ===
+
+// 1. GET all approved articles (Public)
+app.get('/api/articles', (req, res) => {
+  db.all('SELECT * FROM articles WHERE status = \'Approved\' ORDER BY created_at DESC', [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ message: 'Σφάλμα κατά την ανάκτηση των άρθρων.' });
+    }
+    res.json(rows);
+  });
+});
+
+// 2. POST create new article (Public - starts as 'Pending')
+app.post('/api/articles', (req, res) => {
+  const { title, content, author } = req.body;
+
+  if (!title || !content) {
+    return res.status(400).json({ message: 'Τα πεδία Τίτλος και Περιεχόμενο είναι υποχρεωτικά.' });
+  }
+
+  const authorName = author && author.trim() !== '' ? author.trim() : 'Ανώνυμος';
+
+  db.run(
+    'INSERT INTO articles (title, content, author, status) VALUES (?, ?, ?, \'Pending\')',
+    [title, content, authorName],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ message: 'Αποτυχία υποβολής του άρθρου.' });
+      }
+      res.status(201).json({
+        id: this.lastID,
+        title,
+        content,
+        author: authorName,
+        status: 'Pending',
+        created_at: new Date().toISOString()
+      });
+    }
+  );
+});
+
+// 3. GET all articles for Admin Panel (Protected)
+app.get('/api/admin/articles', authenticateToken, (req, res) => {
+  db.all('SELECT * FROM articles ORDER BY created_at DESC', [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ message: 'Σφάλμα κατά την ανάκτηση όλων των άρθρων.' });
+    }
+    res.json(rows);
+  });
+});
+
+// 4. PUT update article status (Protected - Approve/Reject)
+app.put('/api/admin/articles/:id/status', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!['Pending', 'Approved', 'Rejected'].includes(status)) {
+    return res.status(400).json({ message: 'Μη έγκυρη κατάσταση άρθρου.' });
+  }
+
+  db.run(
+    'UPDATE articles SET status = ? WHERE id = ?',
+    [status, id],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ message: 'Αποτυχία ενημέρωσης της κατάστασης του άρθρου.' });
+      }
+      if (this.changes === 0) {
+        return res.status(404).json({ message: 'Το άρθρο δεν βρέθηκε.' });
+      }
+      res.json({ id: parseInt(id), status });
+    }
+  );
+});
+
+// 5. DELETE article (Protected)
+app.delete('/api/admin/articles/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+
+  db.run('DELETE FROM articles WHERE id = ?', [id], function(err) {
+    if (err) {
+      return res.status(500).json({ message: 'Αποτυχία διαγραφής του άρθρου.' });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ message: 'Το άρθρο δεν βρέθηκε.' });
+    }
+    res.json({ message: 'Το άρθρο διαγράφηκε επιτυχώς.', id: parseInt(id) });
+  });
+});
+
 // Serve frontend static assets in production
 const frontendDistPath = path.join(__dirname, '../frontend/dist');
 app.use(express.static(frontendDistPath));
