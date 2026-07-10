@@ -10,6 +10,14 @@ export default function SocialFeed() {
   const [userLikes, setUserLikes] = useState({});
   // Mock counts to add to the likes for simulation: { postId: number }
   const [mockLikesCount, setMockLikesCount] = useState({});
+  const [activeShareMenu, setActiveShareMenu] = useState(null);
+
+  // Close share dropdowns on clicking outside
+  useEffect(() => {
+    const handleDocumentClick = () => setActiveShareMenu(null);
+    document.addEventListener('click', handleDocumentClick);
+    return () => document.removeEventListener('click', handleDocumentClick);
+  }, []);
 
   useEffect(() => {
     fetchPosts();
@@ -59,10 +67,9 @@ export default function SocialFeed() {
     localStorage.setItem('orfeas_feed_likes_counts', JSON.stringify(newCounts));
   };
 
-  const handleShareClick = (postId) => {
-    const shareUrl = `${window.location.origin}/#activities`;
-    navigator.clipboard.writeText(shareUrl);
-    alert('Ο σύνδεσμος αντιγράφηκε στο πρόχειρο!');
+  const handleShareToggle = (postId, e) => {
+    e.stopPropagation();
+    setActiveShareMenu(activeShareMenu === postId ? null : postId);
   };
 
   const getLikesCount = (postId) => {
@@ -190,13 +197,50 @@ export default function SocialFeed() {
                     </button>
 
                     {/* Share button */}
-                    <button 
-                      onClick={() => handleShareClick(post.id)}
-                      className="flex items-center space-x-1.5 text-xs text-slate-500 hover:text-cultural-blue font-bold focus:outline-none transition-colors"
-                    >
-                      <i className="far fa-share-square text-base"></i>
-                      <span>Κοινοποίηση</span>
-                    </button>
+                    <div className="relative">
+                      <button 
+                        onClick={(e) => handleShareToggle(post.id, e)}
+                        className="flex items-center space-x-1.5 text-xs text-slate-500 hover:text-cultural-blue font-bold focus:outline-none transition-colors"
+                      >
+                        <i className="far fa-share-square text-base"></i>
+                        <span>Κοινοποίηση</span>
+                      </button>
+
+                      {/* Share Dropdown Menu */}
+                      {activeShareMenu === post.id && (
+                        <div 
+                          className="absolute bottom-full left-0 mb-2 w-48 bg-white border border-slate-200/60 rounded-xl shadow-lg py-1.5 z-20 animate-fade-in text-slate-700"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const shareUrl = `${window.location.origin}/#activities`;
+                              navigator.clipboard.writeText(shareUrl);
+                              alert('Ο σύνδεσμος αντιγράφηκε στο πρόχειρο!');
+                              setActiveShareMenu(null);
+                            }}
+                            className="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 flex items-center space-x-2 transition-colors focus:outline-none"
+                          >
+                            <i className="fas fa-link text-slate-400 text-sm"></i>
+                            <span>Αντιγραφή Συνδέσμου</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const shareUrl = `${window.location.origin}/#activities`;
+                              const fbShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+                              window.open(fbShareUrl, '_blank', 'width=600,height=400');
+                              setActiveShareMenu(null);
+                            }}
+                            className="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 flex items-center space-x-2 transition-colors focus:outline-none"
+                          >
+                            <i className="fab fa-facebook text-blue-600 text-sm"></i>
+                            <span className="font-semibold text-blue-600">Κοινοποίηση στο FB</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Decorative badge */}
