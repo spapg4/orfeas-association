@@ -203,13 +203,18 @@ export default function Calendar() {
                   key={idx}
                   onClick={() => setSelectedDate(cell.date)}
                   className={`aspect-square p-1.5 rounded-2xl flex flex-col items-center justify-between transition-all border outline-none relative group ${
-                    !cell.isCurrentMonth ? 'text-slate-300 bg-slate-50/20 border-transparent' :
+                    !cell.isCurrentMonth ? 'text-slate-300 bg-slate-50/20 border-transparent pointer-events-none' :
                     isSelected ? 'bg-cultural-burgundy text-white border-cultural-burgundy shadow-md shadow-cultural-burgundy/20' :
-                    isToday ? 'bg-cultural-blue/10 text-cultural-blue border-cultural-blue/30 font-bold' :
+                    hasEvents ? 'bg-cultural-gold/10 text-slate-900 border-cultural-gold/40 font-bold shadow-sm hover:bg-cultural-gold/20' :
+                    isToday ? 'bg-cultural-blue/10 text-cultural-blue border-cultural-blue/30 font-bold hover:bg-cultural-blue/20' :
                     'bg-slate-50/50 hover:bg-slate-100/70 border-slate-200/40 text-slate-700'
                   }`}
                 >
-                  <span className="text-sm font-semibold self-start ml-1 mt-0.5">{cell.day}</span>
+                  <span className={`text-sm self-start ml-1 mt-0.5 ${
+                    isSelected ? 'text-white font-bold' :
+                    hasEvents ? 'text-cultural-burgundy font-black text-[15px]' :
+                    'text-slate-700 font-semibold'
+                  }`}>{cell.day}</span>
                   
                   {/* Event indicators */}
                   {hasEvents && (
@@ -217,9 +222,9 @@ export default function Calendar() {
                       {dateEvents.slice(0, 3).map((e, index) => (
                         <span 
                           key={index} 
-                          className={`w-1.5 h-1.5 rounded-full ${
+                          className={`w-2 h-2 rounded-full ${
                             isSelected ? 'bg-white' : 'bg-cultural-gold'
-                          } animate-pulse`}
+                          }`}
                         ></span>
                       ))}
                     </div>
