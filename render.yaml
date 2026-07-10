@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: orfeas-association
+    name: orfeas-me
     env: node
     plan: free
     buildCommand: npm run build
