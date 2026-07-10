@@ -51,8 +51,8 @@ export default function SocialFeed() {
     setUserLikes(newLikes);
     localStorage.setItem('orfeas_user_feed_likes', JSON.stringify(newLikes));
 
-    // Update count simulation
-    const currentMockCount = mockLikesCount[postId] !== undefined ? mockLikesCount[postId] : Math.floor(Math.random() * 15) + 3;
+    // Update count simulation starting from 0
+    const currentMockCount = mockLikesCount[postId] !== undefined ? mockLikesCount[postId] : 0;
     const newCount = isLiked ? currentMockCount - 1 : currentMockCount + 1;
     const newCounts = { ...mockLikesCount, [postId]: newCount };
     setMockLikesCount(newCounts);
@@ -69,9 +69,7 @@ export default function SocialFeed() {
     if (mockLikesCount[postId] !== undefined) {
       return mockLikesCount[postId];
     }
-    // Seed a random realistic likes count between 5 and 30 for visual appeal if not yet set
-    const seed = (postId % 7) * 4 + 5;
-    return seed;
+    return 0;
   };
 
   const formatDate = (dateStr) => {
